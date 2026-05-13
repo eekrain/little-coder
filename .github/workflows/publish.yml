@@ -35,6 +35,12 @@ jobs:
 
       - run: npm ci
 
+      # Playwright is a runtime dep (browser-extract retention test runs a real
+      # chromium against Wikipedia). `npm ci` installs the package but not the
+      # browser binary; do that here. --with-deps brings the apt libs along.
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
       - run: npm test
       - run: npm run typecheck
 
