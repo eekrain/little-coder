@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { getSessionStore } from "../evidence/index.ts";
 
 // Port of compaction.py's Evidence-preservation contract.

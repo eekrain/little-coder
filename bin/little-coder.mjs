@@ -17,8 +17,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkForUpdate } from "./update-check.mjs";
 
-// ---- 1. Node version preflight (>= 20.6.0, matching pi.dev) ----
-const MIN_NODE = [20, 6, 0];
+// ---- 1. Node version preflight (>= 22.19.0, matching pi.dev) ----
+const MIN_NODE = [22, 19, 0];
 const cur = process.versions.node.split(".").map((n) => parseInt(n, 10));
 const tooOld =
   cur[0] < MIN_NODE[0] ||
@@ -27,7 +27,7 @@ const tooOld =
 if (tooOld) {
   console.error(
     `little-coder requires Node.js >= ${MIN_NODE.join(".")} (you have ${process.versions.node}).\n` +
-      `Install a newer Node from https://nodejs.org or via nvm: 'nvm install 20'.`,
+      `Install a newer Node from https://nodejs.org or via nvm: 'nvm install 22'.`,
   );
   process.exit(1);
 }
@@ -36,13 +36,38 @@ if (tooOld) {
 const here = dirname(fileURLToPath(import.meta.url));
 const pkgRoot = resolve(here, "..");
 
-// ---- 3. Resolve the bundled pi binary ----
-const isWindows = process.platform === "win32";
-const piBinBase = join(pkgRoot, "node_modules", ".bin", "pi");
-const piBin = isWindows && existsSync(`${piBinBase}.cmd`) ? `${piBinBase}.cmd` : piBinBase;
-if (!existsSync(piBin)) {
+// ---- 3. Resolve the bundled pi CLI entry point ----
+// We invoke pi's JS entry directly under the current Node binary instead of
+// the `node_modules/.bin/pi` shim. Two reasons:
+//   1. On Windows, `.bin/pi.cmd` is an npm-generated batch shim. When it (or
+//      anything it transitively invokes) is launched from a path containing
+//      spaces — most notably the default Node install location
+//      `C:\Program Files\nodejs\` — cmd's whitespace tokenization can split
+//      the path at the first space and produce errors like
+//      `'C:\Program' is not recognized as an internal or external command`
+//      (see issue #23). Spawning `process.execPath` with the resolved cli.js
+//      path as an argv element sidesteps cmd entirely — Node's spawn handles
+//      Windows argv quoting itself.
+//   2. We no longer need a separate `cmd.exe /c …` branch, so the same
+//      spawn path works identically on Linux, macOS, and Windows.
+const piPkgRoot = join(pkgRoot, "node_modules", "@earendil-works", "pi-coding-agent");
+let piEntry;
+try {
+  const piPkgJson = JSON.parse(readFileSync(join(piPkgRoot, "package.json"), "utf-8"));
+  const binRel = typeof piPkgJson?.bin === "string" ? piPkgJson.bin : piPkgJson?.bin?.pi;
+  if (typeof binRel !== "string") throw new Error("pi package.json has no bin.pi entry");
+  piEntry = resolve(piPkgRoot, binRel);
+} catch (err) {
   console.error(
-    `little-coder: cannot find pi at ${piBin}.\n` +
+    `little-coder: cannot resolve pi cli entry under ${piPkgRoot}.\n` +
+      `Underlying error: ${err?.message ?? err}\n` +
+      `Try reinstalling: npm install -g little-coder`,
+  );
+  process.exit(1);
+}
+if (!existsSync(piEntry)) {
+  console.error(
+    `little-coder: cannot find pi at ${piEntry}.\n` +
       `Try reinstalling: npm install -g little-coder`,
   );
   process.exit(1);
@@ -150,11 +175,11 @@ try {
 }
 
 // ---- 9. Spawn pi in the user's cwd ----
-const [spawnCmd, spawnArgs] = isWindows
-  ? ["cmd.exe", ["/c", piBin, ...piArgs]]
-  : [piBin, piArgs];
-
-const child = spawn(spawnCmd, spawnArgs, {
+// `process.execPath` is the same Node binary that's running this launcher, so
+// pi inherits the exact runtime that already passed our >= 22.19.0 preflight.
+// Passing piEntry as an argv element (not a shell string) avoids any
+// shell-injection / space-in-path classes on every platform.
+const child = spawn(process.execPath, [piEntry, ...piArgs], {
   stdio: "inherit",
   cwd: process.cwd(),
   env: process.env,

@@ -16,7 +16,7 @@ If you've never used pi, it's useful to skim [pi.dev](https://pi.dev) first — 
 
 ## Install
 
-One-line install (Node.js 20.6+ required):
+One-line install (Node.js 22.19+ required):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/itayinbarr/little-coder/main/install.sh | bash
@@ -36,7 +36,7 @@ bun add -g little-coder
 
 That's the whole install. No clone, no `npm install` in a workspace, no PATH fiddling. `little-coder` is now on your PATH and works from any directory.
 
-> **Note for `bun add -g` users.** The launcher (`bin/little-coder.mjs`) is a Node.js script with `#!/usr/bin/env node` at the top, so Node ≥ 20.6 still has to be on your PATH for the binary to start — bun is fine for installing/updating the package, but the runtime is Node. If you want a fully node-less setup, replace the shebang in `$(bun pm bin -g)/little-coder` with `#!/usr/bin/env bun`.
+> **Note for `bun add -g` users.** The launcher (`bin/little-coder.mjs`) is a Node.js script with `#!/usr/bin/env node` at the top, so Node ≥ 22.19 still has to be on your PATH for the binary to start — bun is fine for installing/updating the package, but the runtime is Node. If you want a fully node-less setup, replace the shebang in `$(bun pm bin -g)/little-coder` with `#!/usr/bin/env bun`.
 
 ## Run
 
@@ -264,7 +264,7 @@ That spans short coding exercises (Polyglot), interactive shell-bound tasks (Ter
 
 **Extension load failures on startup** — run `little-coder --list-models --verbose`; extension errors surface there. If the install looks corrupt: `npm uninstall -g little-coder && npm install -g little-coder`.
 
-**Node version too old** — little-coder needs Node ≥ 20.6.0. Check with `node --version`. Easiest fix: `nvm install 20 && nvm use 20`.
+**Node version too old** — little-coder needs Node ≥ 22.19.0 (matching the minimum of the bundled `@earendil-works/pi-coding-agent` v0.75+). Check with `node --version`. Easiest fix: `nvm install 22 && nvm use 22`.
 
 ---
 
@@ -367,7 +367,7 @@ The paper ran `ollama/qwen3.5` through the Python little-coder at commit **`1d62
 
 little-coder v0.0.x was a derivative work of [CheetahClaws / ClawSpring](https://github.com/SafeRL-Lab/clawspring) by SafeRL-Lab, Apache 2.0. That upstream provided the Python agent substrate, tool system, multi-provider support, and REPL.
 
-little-coder v0.1.0+ replaces that substrate with **[pi](https://github.com/badlogic/pi-mono)** (`@mariozechner/pi-coding-agent`) by Mario Zechner — Apache 2.0 / MIT. pi provides the agent loop, provider abstraction, TUI, and extension model. little-coder rebuilds its small-model adaptations on top of pi as extensions.
+little-coder v0.1.0+ replaces that substrate with **[pi](https://pi.dev)** by Mario Zechner — Apache 2.0 / MIT. The npm package was renamed from `@mariozechner/pi-coding-agent` to `@earendil-works/pi-coding-agent` in upstream's 0.74 release; little-coder v1.4.2+ ships with the new package. pi provides the agent loop, provider abstraction, TUI, and extension model. little-coder rebuilds its small-model adaptations on top of pi as extensions.
 
 All little-coder-specific mechanisms — Write-vs-Edit invariant, skill / knowledge injection, thinking-budget cap, output-parser, quality-monitor, per-model profiles, per-benchmark overrides, ShellSession / Browser / Evidence tool families, evidence-aware compaction — are preserved across versions.
 

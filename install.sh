@@ -9,7 +9,7 @@ err() { printf '\033[1;31m[little-coder]\033[0m %s\n' "$*" >&2; }
 
 # 1. node + npm present?
 if ! command -v node >/dev/null 2>&1; then
-  err "Node.js not found. Install Node 20.6+ from https://nodejs.org or via nvm: 'nvm install 20'."
+  err "Node.js not found. Install Node 22.19+ from https://nodejs.org or via nvm: 'nvm install 22'."
   exit 1
 fi
 if ! command -v npm >/dev/null 2>&1; then
@@ -17,14 +17,14 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
-# 2. node >= 20.6.0
+# 2. node >= 22.19.0 (matches @earendil-works/pi-coding-agent's minimum)
 NODE_V=$(node -p "process.versions.node")
 if ! node -e '
   const [a,b] = process.versions.node.split(".").map(Number);
-  if (a < 20 || (a === 20 && b < 6)) process.exit(1);
+  if (a < 22 || (a === 22 && b < 19)) process.exit(1);
 '; then
-  err "Node $NODE_V is too old. little-coder needs >= 20.6.0."
-  err "Try: nvm install 20 && nvm use 20"
+  err "Node $NODE_V is too old. little-coder needs >= 22.19.0."
+  err "Try: nvm install 22 && nvm use 22"
   exit 1
 fi
 say "Node $NODE_V detected."

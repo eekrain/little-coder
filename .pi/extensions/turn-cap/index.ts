@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // Port of agent.py's max_turns early-break. Counts turn_start events per
 // agent_start span; when the count exceeds LITTLE_CODER_MAX_TURNS (or the

@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { parseTextToolCalls } from "./parser.ts";
 
 // Detects malformed/fenced tool calls in assistant text and nudges the model

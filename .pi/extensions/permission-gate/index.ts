@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // Port of tools.py::_SAFE_PREFIXES + agent.py::_check_permission. Bash
 // commands not matching the whitelist are blocked in "auto" mode. In

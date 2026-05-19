@@ -1,4 +1,4 @@
-import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 // override quietStartup and see the resource list.
 //
 // Implementation pattern follows the bundled pi example at
-// `node_modules/@mariozechner/pi-coding-agent/examples/extensions/custom-header.ts` —
+// `node_modules/@earendil-works/pi-coding-agent/examples/extensions/custom-header.ts` —
 // the factory returns a duck-typed Component (`render(width): string[]` +
 // `invalidate()`), so no deep imports from pi-tui are needed.
 

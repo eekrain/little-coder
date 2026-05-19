@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { assessResponse, buildCorrectionMessage, type ToolCall } from "./quality.ts";
 
 // Port of local/quality.py. Hooks turn_end, inspects the assistant message

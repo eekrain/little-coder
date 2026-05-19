@@ -1,6 +1,6 @@
 {
   "name": "little-coder",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "A pi-based coding agent optimized for small local language models. Reproduces the whitepaper's scaffold-model-fit adaptations as pi extensions.",
   "homepage": "https://github.com/itayinbarr/little-coder",
   "repository": {
@@ -14,7 +14,7 @@
     "little-coder": "bin/little-coder.mjs"
   },
   "engines": {
-    "node": ">=20.6.0"
+    "node": ">=22.19.0"
   },
   "files": [
     "bin/",
@@ -35,7 +35,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.68.1",
+    "@earendil-works/pi-coding-agent": "^0.75.3",
     "@sinclair/typebox": "^0.34.49",
     "playwright": "^1.59.1"
   },

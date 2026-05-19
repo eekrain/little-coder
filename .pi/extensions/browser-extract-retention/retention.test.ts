@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { buildPlaceholder, pruneMessages } from "./index.ts";
 
 // Canned message shapes mirror pi's AgentMessage / ToolResultMessage.
-// See node_modules/@mariozechner/pi-ai/dist/types.d.ts for the real types.
+// See node_modules/@earendil-works/pi-ai/dist/types.d.ts for the real types.
 
 function userMsg(text: string) {
   return { role: "user", content: text };

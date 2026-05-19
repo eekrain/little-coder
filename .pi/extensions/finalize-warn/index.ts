@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // Pre-cap finalize-warn: when the agent has WARN_REMAINING turns left
 // (this turn included), inject a follow-up user message reminding it to

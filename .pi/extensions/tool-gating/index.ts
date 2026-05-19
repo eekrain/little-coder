@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // Port of agent.py's _allowed_tools gate. When LITTLE_CODER_ALLOWED_TOOLS
 // is set (comma-separated), any tool_call not in the list is blocked with

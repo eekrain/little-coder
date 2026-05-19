@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // Port of the thinking-budget cap + partial-trace reuse logic from
 // providers.py. little-coder's Python implementation aborts the stream
