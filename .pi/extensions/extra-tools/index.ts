@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { glob as globSync } from "node:fs/promises";
+import { globFiles, renderGlobOutcome } from "./glob.ts";
 
 // Ports of tools.py::_glob, _webfetch, _websearch. Pi ships its own grep/find,
 // so those are not re-registered here.
@@ -10,7 +10,9 @@ export default function (pi: ExtensionAPI) {
     name: "glob",
     label: "Glob",
     description:
-      "Find files matching a glob pattern. Returns a sorted list of matching paths (up to 500).",
+      "Find files matching a glob pattern. Returns a sorted list of matching paths (up to 500). " +
+      "Common dependency/build/cache dirs (node_modules, .git, dist, …) are skipped, and the walk " +
+      "is bounded — for a focused search, pass a `path` rather than globbing a whole home directory.",
     parameters: Type.Object({
       pattern: Type.String({ description: "Glob pattern e.g. **/*.py" }),
       path: Type.Optional(Type.String({ description: "Base directory (default: cwd)" })),
@@ -18,16 +20,11 @@ export default function (pi: ExtensionAPI) {
     async execute(_id, { pattern, path }) {
       try {
         const base = path || process.cwd();
-        const matches: string[] = [];
-        // Node 22's fs/promises.glob — returns an async iterator
-        for await (const m of globSync(pattern, { cwd: base })) {
-          matches.push(`${base}/${m}`);
-          if (matches.length >= 500) break;
-        }
-        matches.sort();
-        const text = matches.length === 0 ? "No files matched" : matches.join("\n");
+        // Bounded walk: prunes heavy dirs and caps total entries scanned so a
+        // recursive glob from a huge root can't exhaust the process heap.
+        const outcome = await globFiles(pattern, { base });
         return {
-          content: [{ type: "text", text }],
+          content: [{ type: "text", text: renderGlobOutcome(outcome) }],
           details: {},
         };
       } catch (e) {

@@ -2,6 +2,16 @@
 
 All notable changes to little-coder are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and little-coder's public interface (CLI, providers, tools, skills) follows semver starting at `v0.0.1` post-rename.
 
+## [v1.8.1] — 2026-05-23
+
+### Fixed
+- **`glob` no longer exhausts memory on a recursive search from a huge root.** The tool capped *matches* at 500 but never bounded the *walk*: run from a home directory (or any tree with macOS `Library`, caches, or `node_modules`), `fs.glob` recursively descended everything and its internal traversal state grew until the Node **process** ran out of heap — a host-memory crash (`Ineffective mark-compacts near heap limit`), entirely distinct from the model's *context window* (the read-guard / window machinery operates on tool *results* in tokens; this died mid-walk, before any result existed). The walk is now bounded two ways: heavy/irrelevant directories (`node_modules`, `.git`, `dist`, `.cache`, `Library`, `venv`, `target`, …) are **pruned** — never descended — and a hard scan budget (200 000 entries) halts the walk through the one hook `fs.glob` calls per entry (`exclude`), since it exposes no signal/abort. When results are cut short the output says so, so the model narrows its search. New unit-tested `globFiles` / `renderGlobOutcome` helpers (`.pi/extensions/extra-tools/glob.ts`), verified to prune `node_modules` (0 descent) and to halt at the scan budget.
+
+### Notes for upgraders
+- For a focused search, pass a `path` (a project subdirectory) instead of globbing from a home directory. Hidden directories continue to be skipped by `fs.glob` as before.
+
+---
+
 ## [v1.8.0] — 2026-05-23
 
 little-coder now **auto-detects the llama.cpp server's live context window** at startup and registers the model with it, so a `llama-server -c 131072` shows 128k instead of the declared default — no config edit. This completes [v1.7.0](#v170--2026-05-23): the budget already *followed* the registered window; now the registered window itself comes from the running server.
