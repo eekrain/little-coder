@@ -17,7 +17,7 @@ const BUILTIN_SAFE_PREFIXES: readonly string[] = [
   "git log", "git status", "git diff", "git show", "git branch",
   "git remote", "git stash list", "git tag",
   "find ", "grep ", "rg ", "ag ", "fd ", "sed ",
-  "python ", "python3 ", "node ", "ruby ", "perl ",
+  "python ", "python3 ", "node ", "ruby ", "perl ", "bun ", "bunx ",
   "pip show", "pip list", "npm list", "cargo metadata",
   "df ", "du ", "free ", "top -bn", "ps ",
   "curl -I", "curl --head",

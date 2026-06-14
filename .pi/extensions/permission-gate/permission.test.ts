@@ -28,6 +28,16 @@ describe("isSafeBash", () => {
     expect(isSafeBash("npm install foo")).toBe(false);
     expect(isSafeBash("sudo anything")).toBe(false);
   });
+  it("allows bun/bunx runtime invocations", () => {
+    expect(isSafeBash("bun install")).toBe(true);
+    expect(isSafeBash("bun x tsc --noEmit")).toBe(true);
+    expect(isSafeBash("bun run build")).toBe(true);
+    expect(isSafeBash("bunx vitest run")).toBe(true);
+  });
+  it("preserves trailing-whitespace word boundary on bun prefix", () => {
+    expect(isSafeBash("bunfoo")).toBe(false);
+    expect(isSafeBash("bunxfoo")).toBe(false);
+  });
   it("handles leading whitespace", () => {
     expect(isSafeBash("   ls")).toBe(true);
   });
