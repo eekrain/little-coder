@@ -1,6 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { execSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { delimiter } from "node:path";
 import { formatOutput, DEFAULT_TIMEOUT } from "./helpers.ts";
 
 // Port of local/tools/shell_session.py. Two backends implemented:
@@ -17,6 +19,22 @@ import { formatOutput, DEFAULT_TIMEOUT } from "./helpers.ts";
 const TB_MODE_ENV = "LITTLE_CODER_TB_MODE";
 const TB_PROXY_PREFIX = "__LC_TB_SHELL__:";
 
+// Resolve a bash binary. /bin/bash is the common case, but NixOS (and other
+// non-FHS distros) have no /bin/bash — fall back to bash on PATH, then /bin/sh.
+// Mirrors pi's own getShellConfig() resolution so ShellSession matches the
+// built-in Bash tool's shell exactly.
+let resolvedShell: string | undefined;
+function findShell(): string {
+  if (resolvedShell) return resolvedShell;
+  const candidates = ["/bin/bash"];
+  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
+    if (dir) candidates.push(`${dir}/bash`);
+  }
+  candidates.push("/bin/sh");
+  resolvedShell = candidates.find((p) => existsSync(p)) ?? "/bin/sh";
+  return resolvedShell;
+}
+
 function inTbMode(): boolean {
   return process.env[TB_MODE_ENV] === "1";
 }
@@ -24,7 +42,7 @@ function inTbMode(): boolean {
 async function execSubprocess(command: string, timeoutSec: number): Promise<string> {
   try {
     const buf = execSync(command, {
-      shell: "/bin/bash",
+      shell: findShell(),
       timeout: timeoutSec * 1000,
       encoding: "utf-8",
       maxBuffer: 10 * 1024 * 1024,

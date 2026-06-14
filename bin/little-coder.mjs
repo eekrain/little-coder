@@ -127,8 +127,15 @@ if (!isSubagent) {
 
 // ---- 6. Compose pi argv ----
 // --no-context-files : ignore the user's AGENTS.md / CLAUDE.md so OURS wins
-// --no-extensions    : skip pi's auto-discovery from cwd; explicit -e flags still load
 // --system-prompt    : load <pkgRoot>/AGENTS.md regardless of cwd
+//
+// We deliberately do NOT pass --no-extensions. Pi's normal auto-discovery is
+// left on so that extensions installed via `pi install` (which land in
+// ~/.pi/agent/extensions/ or pi's settings) and project-local .pi/extensions/
+// in the cwd are picked up. The bundled extensions passed via --extension
+// below load regardless (cliEnabledExtensions), and mergePaths dedupes by
+// resolved path, so running from this repo won't double-load them. Pass
+// --no-extensions yourself if you ever want to suppress discovery.
 //
 // Strip our own flags before forwarding to pi so it doesn't reject them.
 const userArgs = process.argv.slice(2).filter((a) => a !== "--no-update-check");
@@ -146,7 +153,6 @@ const thinkingArgs = !userPickedThinking && !headless ? ["--thinking", "medium"]
 
 const piArgs = [
   "--no-context-files",
-  "--no-extensions",
   ...(existsSync(agentsMd) ? ["--system-prompt", agentsMd] : []),
   ...thinkingArgs,
   ...extArgs,
