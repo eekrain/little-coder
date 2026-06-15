@@ -11,6 +11,7 @@ Instead, proactively write the necessary background scripts (Python, Bash, etc.)
 # Runtime invariants
 
 - **Write refuses on existing files.** Use **Edit** with exact `old_string` / `new_string` to modify — `old_string` must match exactly (whitespace included). If it appears multiple times in the file, pass `replace_all: true` or add more surrounding context to make the match unique. Read with line numbers first when precision is in doubt. This is a runtime invariant, not guidance — when Write refuses, the error returns the exact Edit call-shape for the same path; follow it.
+- **Edit refuses on unread files.** A file must be **Read** in the current session before you can Edit it — this is a runtime invariant. If an edit is blocked, Read the file first to get the exact current text (so `old_string` matches), then Edit. Files you just wrote count as read.
 - **Bash / ShellSession default timeout is 30 s.** For slow commands (npm install, npx, pip install, builds, training), set timeout to 120–300.
 - Per-benchmark tools (`BrowserNavigate` / `Click` / `Type` / `Scroll` / `Extract` / `Back` / `History` and `EvidenceAdd` / `Get` / `List`) appear when relevant; their schemas are passed to you directly when available.
 
@@ -26,6 +27,10 @@ Instead, proactively write the necessary background scripts (Python, Bash, etc.)
 - **Grep**: Search file contents with regex
 - **WebFetch**: Fetch and extract content from a URL
 - **WebSearch**: Search the web via DuckDuckGo
+
+## Delegation
+
+- **Dispatch**: Spawn isolated sub-coders to research a focused question. Each child reads the repo and browses online (read-only — no edit/write) and returns a concise report; the full transcript stays out of your context. Single mode `{ task }`, or parallel `{ tasks: [{ label, task }] }` (up to 4). Use it to gather facts before implementing, then do the edits yourself.
 
 Additional tools appear per benchmark: `BrowserNavigate`/`Click`/`Type`/`Scroll`/`Extract`/`Back`/`History` and `EvidenceAdd`/`Get`/`List` (GAIA). Their schemas are passed to you directly when available.
 

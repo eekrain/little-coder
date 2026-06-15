@@ -10,7 +10,7 @@ export default function (pi: ExtensionAPI) {
     name: "glob",
     label: "Glob",
     description:
-      "Find files matching a glob pattern. Returns a sorted list of matching paths (up to 500). " +
+      "Find files matching a glob pattern. Returns a sorted list of matching paths (up to 100). " +
       "Common dependency/build/cache dirs (node_modules, .git, dist, …) are skipped, and the walk " +
       "is bounded — for a focused search, pass a `path` rather than globbing a whole home directory.",
     parameters: Type.Object({

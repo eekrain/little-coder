@@ -56,6 +56,9 @@ const INTENT_MAP: Record<string, string[]> = {
   browse: ["BrowserNavigate", "BrowserExtract"],
   page: ["BrowserExtract"],
   click: ["BrowserClick"],
+  // Sub-coder delegation
+  delegate: ["dispatch"], dispatch: ["dispatch"], subagent: ["dispatch"],
+  investigate: ["dispatch"], parallel: ["dispatch"],
 };
 
 function skillsDir(): string {
