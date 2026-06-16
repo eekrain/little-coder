@@ -36,6 +36,13 @@ if (tooOld) {
 const here = dirname(fileURLToPath(import.meta.url));
 const pkgRoot = resolve(here, "..");
 
+// Headless sub-coder fast-path. When the subagent extension re-invokes this
+// launcher to spawn a child little-coder (--mode json -p), the update check and
+// the global-settings merge below are pointless per-child overhead (network +
+// disk) — and we want children to start fast. The env flag is set by
+// .pi/extensions/subagent/spawn.ts::buildChildEnv.
+const isSubagent = process.env.LITTLE_CODER_SUBAGENT === "1";
+
 // ---- 3. Resolve the bundled pi CLI entry point ----
 // We invoke pi's JS entry directly under the current Node binary instead of
 // the `node_modules/.bin/pi` shim. Two reasons:
@@ -110,10 +117,12 @@ try {
 } catch {
   // ignore — update-check just won't fire if we can't read the version
 }
-const exitAfterCheck = await checkForUpdate(currentVersion);
-if (exitAfterCheck) {
-  // Successful update happened; user needs to re-run the new binary.
-  process.exit(0);
+if (!isSubagent) {
+  const exitAfterCheck = await checkForUpdate(currentVersion);
+  if (exitAfterCheck) {
+    // Successful update happened; user needs to re-run the new binary.
+    process.exit(0);
+  }
 }
 
 // ---- 6. Compose pi argv ----
@@ -124,10 +133,22 @@ if (exitAfterCheck) {
 // Strip our own flags before forwarding to pi so it doesn't reject them.
 const userArgs = process.argv.slice(2).filter((a) => a !== "--no-update-check");
 const agentsMd = join(pkgRoot, "AGENTS.md");
+
+// Default the thinking level to "medium" for interactive sessions (pi's own
+// default is "minimal"). Only when the user hasn't asked for a level themselves
+// (--thinking, or the --model "provider/id:level" shorthand) and this isn't a
+// headless/sub-coder run (--mode rpc/json) where the caller controls thinking.
+const userPickedThinking =
+  userArgs.includes("--thinking") ||
+  userArgs.some((a, i) => a === "--model" && /:/.test(userArgs[i + 1] || ""));
+const headless = isSubagent || userArgs.includes("--mode") || userArgs.includes("-p");
+const thinkingArgs = !userPickedThinking && !headless ? ["--thinking", "medium"] : [];
+
 const piArgs = [
   "--no-context-files",
   "--no-extensions",
   ...(existsSync(agentsMd) ? ["--system-prompt", agentsMd] : []),
+  ...thinkingArgs,
   ...extArgs,
   ...userArgs,
 ];
@@ -167,7 +188,10 @@ if (process.env.PI_SKIP_VERSION_CHECK === undefined) {
 //
 // Existing keys are preserved. We only write when the desired value differs
 // from what's already on disk, so this is a no-op on warm launches.
-try {
+//
+// Skipped for headless sub-coders: they share the user's settings (already
+// written by the interactive parent) and shouldn't each re-do the merge.
+if (!isSubagent) try {
   const agentDirEnv = process.env.PI_CODING_AGENT_DIR;
   let agentDir;
   if (agentDirEnv && agentDirEnv.trim().length > 0) {
@@ -218,6 +242,33 @@ try {
   }
   if (mutated) {
     writeFileSync(globalSettingsPath, JSON.stringify(globalSettings, null, 2));
+  }
+
+  // ---- 8b. Free shift+tab for Plan Mode ----
+  // little-coder binds shift+tab to its plan-mode toggle (the plan-mode
+  // extension registers it). But shift+tab is pi's built-in "cycle thinking
+  // level", and pi (>= 0.79) refuses an extension shortcut that collides with a
+  // RESERVED built-in — it skips it with an "[Extension issues]" warning. pi
+  // builds its conflict map from the *resolved* keybindings, so moving the
+  // thinking-cycle action to another key in the user keybindings file removes
+  // shift+tab from that map and lets the extension claim it. We rebind the
+  // cycle to alt+t (the key plan-mode used to register itself) — only when the
+  // user hasn't already chosen their own binding for it, so a real user
+  // customization always wins. Non-destructive: every other binding is left
+  // untouched.
+  const keybindingsPath = join(agentDir, "keybindings.json");
+  let keybindings = {};
+  if (existsSync(keybindingsPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(keybindingsPath, "utf-8"));
+      if (parsed && typeof parsed === "object") keybindings = parsed;
+    } catch {
+      keybindings = {};
+    }
+  }
+  if (keybindings["app.thinking.cycle"] === undefined) {
+    keybindings["app.thinking.cycle"] = "alt+t";
+    writeFileSync(keybindingsPath, JSON.stringify(keybindings, null, 2));
   }
 } catch {
   // Best-effort. If we can't write the settings (read-only HOME, etc.) pi

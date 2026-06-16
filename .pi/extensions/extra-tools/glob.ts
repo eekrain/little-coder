@@ -1,10 +1,10 @@
 import { glob as fsGlob } from "node:fs/promises";
 
-// Bounded file globbing. The naive `for await (…glob…) { if (len>=500) break }`
+// Bounded file globbing. The naive `for await (…glob…) { if (len>=100) break }`
 // only caps MATCHES — it does nothing about the WALK. Run from a huge root
 // (e.g. a home directory with macOS Library / caches / node_modules), fs.glob
 // recursively descends everything, and its internal traversal state grows until
-// the Node process OOMs (heap, not the model's context) — long before 500
+// the Node process OOMs (heap, not the model's context) — long before 100
 // matches are found if matches are sparse. fs.glob exposes no signal/abort and
 // no depth/scan cap, so we bound it through the one hook it does call for every
 // entry: `exclude`. We use it to (a) prune heavy/irrelevant directories so they
@@ -45,7 +45,7 @@ export interface GlobOutcome {
 }
 
 export const DEFAULT_MAX_SCAN = 200_000;
-export const DEFAULT_MAX_MATCHES = 500;
+export const DEFAULT_MAX_MATCHES = 100;
 
 export async function globFiles(pattern: string, opts: GlobOptions): Promise<GlobOutcome> {
   const maxScan = opts.maxScan ?? DEFAULT_MAX_SCAN;

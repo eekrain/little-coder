@@ -60,6 +60,14 @@ little-coder --list-models                      # see everything pi knows about
 
 The agent uses the directory you launched it from as its working directory — `Read` / `Write` / `Edit` / `Bash` operate on your project, not on little-coder's install path.
 
+### Interactive features
+
+- **Plan Mode** — press **shift+tab** to toggle (a `◆ PLAN MODE` indicator shows below the input). Submit a request and little-coder researches it with sub-coders, asks you 1-3 clarifying questions (each with suggested answers and a free-text option), then writes a plan in the chat instead of editing anything. **Esc** cancels a plan mid-run. (shift+tab used to cycle the thinking level — that's now **alt+t**.)
+- **Prompt history** — from an empty input, **↑** recalls your recent prompts (most-recent first), **↓** walks forward. History persists across sessions, so a fresh session can recall prompts from earlier runs.
+- **Sub-coders (`dispatch`)** — little-coder can spawn isolated child sessions to research a question (read the repo + browse online, read-only) and report back concisely, without cluttering the main conversation. A live panel above the input tracks them. Tune parallelism with `LITTLE_CODER_SUBCODER_CONCURRENCY` (default 2).
+- **Sessions** — each session is auto-named from your first prompt (rename with `/name`) and shown in the terminal tab title. Use `/resume` to list and reopen past sessions for the current directory.
+- **Read-before-edit** — editing a file requires reading it first, so edits match the file's exact current text.
+
 For local providers (llama.cpp, Ollama, LM Studio) pi expects *some* value in the API-key env even though local servers ignore it:
 
 ```bash
@@ -99,12 +107,14 @@ build/bin/llama-server -m ~/models/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf \
 
 If you only need text and want to skip the projector download, drop the second `hf download` line and the `--mmproj` flag — little-coder still works text-only, but the TUI's image attachment will be rejected by the server with a 4xx.
 
+**Context window.** `-c` sets the server's context (`-c 16384` = 16K above — a conservative default for 8 GB VRAM). little-coder **auto-detects the live `n_ctx`** from llama.cpp's `/props` at startup and registers the model with it, so whatever you pass to `-c` is what the TUI shows and budgets against — no `models.json` edit needed. To run larger, relaunch the server with e.g. `-c 131072` (128K) or `-c 262144` (256K); the KV cache grows with it, so size it to your RAM/VRAM. (`--list-models` reflects the detected window.)
+
 **Option B — Ollama** (simpler, but slower on MoE):
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ollama pull qwen3.5        # 9.7B — the paper's model
-# or: ollama pull qwen3.6-35b-a3b
+# or: ollama pull qwen3.6:35b-a3b
 ```
 
 **Option C — LM Studio** (GUI; OpenAI-compatible server on port 1234):
@@ -330,11 +340,15 @@ The benchmarks harness (`benchmarks/`) is dev-only and not shipped with the npm 
 little-coder/
 ├── .pi/
 │   ├── settings.json               # per-model profiles + benchmark_overrides (terminal_bench, gaia)
-│   └── extensions/                 # 23 TypeScript extensions, auto-discovered by pi
-│       ├── branding/               # little-coder startup header + terminal title (replaces pi's built-in)
+│   └── extensions/                 # 27 TypeScript extensions, auto-discovered by pi
+│       ├── branding/               # little-coder startup header + terminal title + session auto-naming
+│       ├── plan-mode/              # shift+tab "research → ask → plan" flow (sub-coders + clarifying questions → written plan)
+│       ├── subagent/              # `dispatch` tool: isolated read/browse-only sub-coders + live tracker (spawn.ts engine)
+│       ├── prompt-history/         # up-arrow recall of recent prompts (from an empty input)
 │       ├── llama-cpp-provider/     # data-driven provider registration from models.json — ships llamacpp, ollama, lmstudio (+ user override file)
 │       ├── write-guard/            # Write refuses on existing files; rewrites root-bare /foo.md paths to cwd
 │       ├── read-guard/             # trims a Read that would overflow the context window to its first 30 lines + a search-instead directive
+│       ├── read-guard-edit/        # Edit refuses until the file has been Read this session
 │       ├── extra-tools/            # glob, webfetch, websearch (pi ships grep/find)
 │       ├── skill-inject/           # per-turn tool-skill selection (error > recency > intent)
 │       ├── knowledge-inject/       # algorithm cheat-sheet scoring (word=1.0, bigram=2.0, threshold=2.0)
