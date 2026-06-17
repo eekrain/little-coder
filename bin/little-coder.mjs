@@ -9,6 +9,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -250,32 +251,31 @@ if (!isSubagent) try {
     writeFileSync(globalSettingsPath, JSON.stringify(globalSettings, null, 2));
   }
 
-  // ---- 8b. Free shift+tab for Plan Mode ----
-  // little-coder binds shift+tab to its plan-mode toggle (the plan-mode
-  // extension registers it). But shift+tab is pi's built-in "cycle thinking
-  // level", and pi (>= 0.79) refuses an extension shortcut that collides with a
-  // RESERVED built-in — it skips it with an "[Extension issues]" warning. pi
-  // builds its conflict map from the *resolved* keybindings, so moving the
-  // thinking-cycle action to another key in the user keybindings file removes
-  // shift+tab from that map and lets the extension claim it. We rebind the
-  // cycle to alt+t (the key plan-mode used to register itself) — only when the
-  // user hasn't already chosen their own binding for it, so a real user
-  // customization always wins. Non-destructive: every other binding is left
-  // untouched.
+  // ---- 8b. One-time cleanup of the v1.9.0 keybinding rewrite ----
+  // v1.9.0 wrote `app.thinking.cycle: "alt+t"` into ~/.pi/agent/keybindings.json
+  // so the plan-mode extension could claim shift+tab (issue #47). Plan mode now
+  // lives on alt+p, so shift+tab should go back to pi's default thinking-cycle
+  // binding — but only if the value is *exactly* the one we wrote. A user who
+  // chose their own binding (anything ≠ "alt+t") wins.
   const keybindingsPath = join(agentDir, "keybindings.json");
-  let keybindings = {};
   if (existsSync(keybindingsPath)) {
     try {
       const parsed = JSON.parse(readFileSync(keybindingsPath, "utf-8"));
-      if (parsed && typeof parsed === "object") keybindings = parsed;
+      if (parsed && typeof parsed === "object" && parsed["app.thinking.cycle"] === "alt+t") {
+        delete parsed["app.thinking.cycle"];
+        if (Object.keys(parsed).length === 0) {
+          // Don't leave an empty {} sitting around — remove the file so pi
+          // reads its defaults cleanly.
+          rmSync(keybindingsPath);
+        } else {
+          writeFileSync(keybindingsPath, JSON.stringify(parsed, null, 2));
+        }
+      }
     } catch {
-      keybindings = {};
+      // Corrupted JSON or unreadable — leave it alone; pi will surface its own error.
     }
   }
-  if (keybindings["app.thinking.cycle"] === undefined) {
-    keybindings["app.thinking.cycle"] = "alt+t";
-    writeFileSync(keybindingsPath, JSON.stringify(keybindings, null, 2));
-  }
+
 } catch {
   // Best-effort. If we can't write the settings (read-only HOME, etc.) pi
   // falls back to its built-in defaults — the [Extensions] block will show
