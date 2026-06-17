@@ -12,8 +12,8 @@ import { PlanStatus } from "./status.ts";
 
 // Plan Mode — a Claude-Code-style "research, ask, then plan" flow.
 //
-// shift+tab toggles plan mode (an indicator appears below the input). While it
-// is on, submitting a prompt does NOT run a normal coding turn; instead the
+// alt+p toggles plan mode (an indicator appears below the input). While it is
+// on, submitting a prompt does NOT run a normal coding turn; instead the
 // extension orchestrates:
 //   1. decompose the request into 1-4 exploration tasks (a reasoning sub-coder),
 //   2. dispatch those as read-only explorer sub-coders (isolated context; only
@@ -27,9 +27,8 @@ import { PlanStatus } from "./status.ts";
 // child little-coder (spawned via ../subagent/spawn.ts), and the final plan is
 // injected as a normal turn via pi.sendUserMessage so it lands in the chat.
 //
-// shift+tab is normally pi's thinking-level cycle; extension shortcuts take
-// precedence (custom-editor.js checks them first), so we shadow it and move the
-// thinking-level cycle to alt+t to keep it reachable.
+// alt+p is unbound by pi, so the extension can claim it cleanly without
+// shadowing any built-in (shift+tab stays pi's thinking-level cycle — issue #47).
 
 const honey = (s: string) => `\x1b[38;2;225;90;31m${s}\x1b[39m`;
 const gray = (s: string) => `\x1b[90m${s}\x1b[39m`;
@@ -50,7 +49,7 @@ let pendingSynthesis: { digest: string; answers: string } | null = null;
 let synthesisActive = false;
 
 function indicatorLines(): string[] {
-  return [`${honey("◆")} ${honey("PLAN MODE")}  ${gray("(shift+tab to exit)")}`];
+  return [`${honey("◆")} ${honey("PLAN MODE")}  ${gray("(alt+p to exit)")}`];
 }
 
 function setIndicator(ctx: any, on: boolean): void {
@@ -269,8 +268,10 @@ async function orchestrate(pi: ExtensionAPI, ctx: any, prompt: string): Promise<
 }
 
 export default function (pi: ExtensionAPI) {
-  // shift+tab toggles plan mode (shadows pi's thinking-level cycle).
-  pi.registerShortcut("shift+tab", {
+  // alt+p toggles plan mode. pi leaves alt+p unbound, so this doesn't collide
+  // with any built-in and shift+tab stays bound to pi's thinking-level cycle
+  // (issue #47).
+  pi.registerShortcut("alt+p", {
     description: "Toggle plan mode",
     handler: (ctx: any) => {
       if (orchestrating) return; // mid-plan: ignore toggles
@@ -279,10 +280,6 @@ export default function (pi: ExtensionAPI) {
       ctx.ui?.notify?.(planModeOn ? "plan mode on" : "plan mode off", "info");
     },
   });
-
-  // The thinking-level cycle keeps working on alt+t: the launcher rebinds pi's
-  // built-in `app.thinking.cycle` from shift+tab to alt+t so shift+tab is free
-  // for plan mode (see bin/little-coder.mjs §8b). No extension shortcut needed.
 
   // Intercept a submitted prompt while plan mode is on and run the orchestration
   // instead of a normal coding turn.
@@ -357,7 +354,7 @@ export default function (pi: ExtensionAPI) {
       });
     } else {
       (ctx as any).ui?.notify?.(
-        "plan not implemented — refine your request, or shift+tab to leave plan mode",
+        "plan not implemented — refine your request, or alt+p to leave plan mode",
         "info",
       );
     }

@@ -2,6 +2,16 @@
 
 All notable changes to little-coder are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and little-coder's public interface (CLI, providers, tools, skills) follows semver starting at `v0.0.1` post-rename.
 
+## [v1.9.1] — 2026-06-08
+
+### Fixed
+- **Plan Mode shortcut moved to `alt+p` so `shift+tab` stays pi's thinking-level cycle** ([#47](https://github.com/itayinbarr/little-coder/issues/47)). v1.9.0 claimed `shift+tab` for Plan Mode by rebinding pi's built-in `app.thinking.cycle` to `alt+t` in `~/.pi/agent/keybindings.json`. That collided with the muscle memory of every existing pi user — `shift+tab` is the documented thinking cycle — and pi (≥ 0.79) also surfaced an `[Extension issues]` warning whenever the rebind hadn't taken yet. Plan Mode now registers on **`alt+p`** instead (unbound by pi, so the extension claims it cleanly with no shadowing), and `shift+tab` returns to pi's default behavior. The launcher also performs a **one-time cleanup**: on first run after upgrade, if `~/.pi/agent/keybindings.json` still has the v1.9.0 rewrite (`app.thinking.cycle: "alt+t"` exactly), it is removed; any binding you set yourself is preserved untouched. README and the Plan-Mode indicator (`(alt+p to exit)`) updated to match.
+
+### Notes for upgraders
+- No CLI-flag or public-API changes. **Plan Mode is now `alt+p`** (was `shift+tab` in v1.9.0). `shift+tab` is again pi's thinking-level cycle. If you customized `app.thinking.cycle` yourself in `~/.pi/agent/keybindings.json`, your binding is left alone.
+
+---
+
 ## [v1.9.0] — 2026-06-15
 
 ### Added
