@@ -62,7 +62,7 @@ The agent uses the directory you launched it from as its working directory — `
 
 ### Interactive features
 
-- **Plan Mode** — press **shift+tab** to toggle (a `◆ PLAN MODE` indicator shows below the input). Submit a request and little-coder researches it with sub-coders, asks you 1-3 clarifying questions (each with suggested answers and a free-text option), then writes a plan in the chat instead of editing anything. **Esc** cancels a plan mid-run. (shift+tab used to cycle the thinking level — that's now **alt+t**.)
+- **Plan Mode** — press **alt+p** to toggle (a `◆ PLAN MODE` indicator shows below the input). Submit a request and little-coder researches it with sub-coders, asks you 1-3 clarifying questions (each with suggested answers and a free-text option), then writes a plan in the chat instead of editing anything. **Esc** cancels a plan mid-run. (**shift+tab** stays pi's thinking-level cycle.)
 - **Prompt history** — from an empty input, **↑** recalls your recent prompts (most-recent first), **↓** walks forward. History persists across sessions, so a fresh session can recall prompts from earlier runs.
 - **Sub-coders (`dispatch`)** — little-coder can spawn isolated child sessions to research a question (read the repo + browse online, read-only) and report back concisely, without cluttering the main conversation. A live panel above the input tracks them. Tune parallelism with `LITTLE_CODER_SUBCODER_CONCURRENCY` (default 2).
 - **Sessions** — each session is auto-named from your first prompt (rename with `/name`) and shown in the terminal tab title. Use `/resume` to list and reopen past sessions for the current directory.
@@ -342,7 +342,7 @@ little-coder/
 │   ├── settings.json               # per-model profiles + benchmark_overrides (terminal_bench, gaia)
 │   └── extensions/                 # 27 TypeScript extensions, auto-discovered by pi
 │       ├── branding/               # little-coder startup header + terminal title + session auto-naming
-│       ├── plan-mode/              # shift+tab "research → ask → plan" flow (sub-coders + clarifying questions → written plan)
+│       ├── plan-mode/              # alt+p "research → ask → plan" flow (sub-coders + clarifying questions → written plan)
 │       ├── subagent/              # `dispatch` tool: isolated read/browse-only sub-coders + live tracker (spawn.ts engine)
 │       ├── prompt-history/         # up-arrow recall of recent prompts (from an empty input)
 │       ├── llama-cpp-provider/     # data-driven provider registration from models.json — ships llamacpp, ollama, lmstudio (+ user override file)
