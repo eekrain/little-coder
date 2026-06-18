@@ -8,6 +8,7 @@ import {
   type SubCoderResult,
 } from "./spawn.ts";
 import { SubCoderTracker } from "./tracker.ts";
+import { truncateLineToWidth } from "../_shared/width.ts";
 
 // The `dispatch` tool: the main little-coder spawns isolated child little-coder
 // sessions ("sub-coders") to research a focused question — they read the repo
@@ -190,11 +191,22 @@ export default function (pi: ExtensionAPI) {
   });
 }
 
-/** A minimal pi-tui Component backed by precomputed lines. */
-function makeComponent(lines: string[]) {
+/** A minimal pi-tui Component backed by precomputed lines.
+ *
+ * pi paints custom tool-result panels with a 1-char left margin + background-
+ * frame fill, so any line we hand back that's wider than `width - 1` overflows
+ * the terminal and crashes pi-tui (issue #51 / reopen of #48 — the dispatch
+ * renderer fed an unbounded sub-coder report sentence into the panel, and on
+ * `--resume` the same renderer paints session history, so the crash recurred
+ * even after v1.9.2 capped the *live* tracker). We respect the pi-supplied
+ * `width` here and truncate every line to `width - 2`, leaving a 2-char
+ * safety margin so wide unicode chars in the report can't sneak past our
+ * char-count-based visibleWidth approximation. */
+export function makeComponent(lines: string[]) {
   return {
-    render(_width: number): string[] {
-      return lines;
+    render(width: number): string[] {
+      const cap = Math.max(1, width - 2);
+      return lines.map((l) => truncateLineToWidth(l, cap));
     },
     invalidate() {},
   };

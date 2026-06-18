@@ -2,6 +2,16 @@
 
 All notable changes to little-coder are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and little-coder's public interface (CLI, providers, tools, skills) follows semver starting at `v0.0.1` post-rename.
 
+## [v1.9.4] — 2026-06-18
+
+### Fixed
+- **Dispatch tool-result panel overflows the terminal on wide report lines** ([#51](https://github.com/itayinbarr/little-coder/issues/51), reopen of [#48](https://github.com/itayinbarr/little-coder/issues/48)). v1.9.2 capped every line the *live* sub-coder tracker emitted, but the **dispatch tool's result renderer** (`subagent/index.ts`'s `makeComponent`) was still ignoring the `width` arg pi passes to `render(width)` — it returned the precomputed lines verbatim. pi paints the tool-result panel with a 1-char background-color left margin, so any sub-coder report sentence wider than `terminal_width - 1` overflowed pi-tui. Crash log line 453 was a 134-char markdown sentence rendered at terminal width 133 → 135 > 133. The same path runs on **`--resume`** (pi re-paints saved tool results from session history), so v1.9.2 users still hit it after upgrading whenever they resumed a session with a wide dispatch report saved — that's why @steverhoades caught the regression. `makeComponent` now truncates every emitted line to `width - 2` using the existing `_shared/width.ts` utility (2-char safety margin for wide unicode under our char-count-based `visibleWidth` approximation), so the dispatch panel can no longer crash a session — live, on resume, or anywhere else. New `subagent/issue-51-repro.test.ts` drives `makeComponent` with the user's exact 134-char content shape at width 133 and asserts no emitted line exceeds, plus a narrow-terminal (40-col) survival check.
+
+### Notes for upgraders
+- No CLI-flag or public-API changes. If you saw `Rendered line N exceeds terminal width` on v1.9.2 / 1.9.3 — especially while *resuming* a session — 1.9.4 fixes it. If you still see it after upgrading, the offending line in `~/.pi/agent/pi-crash.log` should let us spot the source; reopen #51 or #48 with the log attached.
+
+---
+
 ## [v1.9.3] — 2026-06-18
 
 ### Added
