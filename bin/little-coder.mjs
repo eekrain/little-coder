@@ -17,6 +17,7 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkForUpdate } from "./update-check.mjs";
+import { parseExtraExtensions } from "./extras.mjs";
 
 // ---- 1. Node version preflight (>= 22.19.0, matching pi.dev) ----
 const MIN_NODE = [22, 19, 0];
@@ -108,6 +109,21 @@ if (existsSync(extDir)) {
       // skip unreadable entries
     }
   }
+}
+
+// ---- 4b. Third-party extensions via LITTLE_CODER_EXTRA_EXTENSIONS ----
+// Path-delimited list (`:` on POSIX, `;` on Windows — node:path.delimiter)
+// of extra extension paths to load alongside the bundled ones. Each entry can
+// be either a direct file path (e.g. a pi-ponytail-style `extensions/ponytail.js`)
+// or a directory containing `index.ts` / `index.js`. Survives upgrades and
+// avoids the "fork the installed npm package" workaround that issue #46 hit.
+// Parsing rules — ~/ expansion, directory-with-index resolution, one-line
+// warning for missing/unusable entries — live in ./extras.mjs so they're
+// unit-testable in isolation.
+{
+  const { entries, warnings } = parseExtraExtensions(process.env.LITTLE_CODER_EXTRA_EXTENSIONS);
+  for (const w of warnings) console.error(w);
+  for (const entry of entries) extArgs.push("--extension", entry);
 }
 
 // ---- 5. Update check (best-effort, blocks on TTY prompt only) ----
