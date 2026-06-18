@@ -67,6 +67,7 @@ The agent uses the directory you launched it from as its working directory — `
 - **Sub-coders (`dispatch`)** — little-coder can spawn isolated child sessions to research a question (read the repo + browse online, read-only) and report back concisely, without cluttering the main conversation. A live panel above the input tracks them. Tune parallelism with `LITTLE_CODER_SUBCODER_CONCURRENCY` (default 2).
 - **Sessions** — each session is auto-named from your first prompt (rename with `/name`) and shown in the terminal tab title. Use `/resume` to list and reopen past sessions for the current directory.
 - **Read-before-edit** — editing a file requires reading it first, so edits match the file's exact current text.
+- **Third-party extensions (`LITTLE_CODER_EXTRA_EXTENSIONS`)** — path-delimited list (`:` on POSIX, `;` on Windows) of extension paths to layer on top of the bundled set. Each entry can be a direct file (e.g. a `pi-ponytail`-style `extensions/ponytail.js`) or a directory containing `index.ts` / `index.js`. `~/` is expanded; missing paths log a warning and are skipped. Survives upgrades, no patching the installed package. Example: `LITTLE_CODER_EXTRA_EXTENSIONS=~/.local/lib/node_modules/pi-ponytail/extensions/ponytail.js little-coder`. (Single-file extensions can still use `little-coder -e <path>` for one-off loads.)
 
 For local providers (llama.cpp, Ollama, LM Studio) pi expects *some* value in the API-key env even though local servers ignore it:
 

@@ -2,6 +2,36 @@
 
 All notable changes to little-coder are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and little-coder's public interface (CLI, providers, tools, skills) follows semver starting at `v0.0.1` post-rename.
 
+## [v1.9.5] — 2026-06-18
+
+### Changed
+- **Dispatch tool-result panel now word-wraps wide report lines instead of truncating them** ([PR #49](https://github.com/itayinbarr/little-coder/pull/49) by [@steverhoades](https://github.com/steverhoades), closes [#48](https://github.com/itayinbarr/little-coder/issues/48) and [#51](https://github.com/itayinbarr/little-coder/issues/51)). v1.9.4 fixed the width-overflow crash by truncating each panel line to `width - 2` with an ellipsis; v1.9.5 replaces the truncation with **word-wrap** so the full sentence survives across multiple visual lines — a strictly better UX for markdown sub-coder reports than dropping the tail at char 131. The cherry-picked commit (steverhoades's authorship preserved) keeps the wrap helpers (ANSI-aware prefix extraction, long-token chunking for whitespace-free URLs/paths/base64 that would otherwise defeat word-wrap, plain-text word-wrap), and the `makeComponent.render(width)` is rebased onto v1.9.4's `width - 2` safety margin so wide-unicode chars our char-count `visibleWidth` undercounts still can't sneak past pi's strict line-width check. Inspiration for the long-token sanitizer credited in-source to [openclaw-cn's tui-formatters.ts](https://github.com/mf-yang/openclaw-cn/commit/8c822da26f0a77396107a31f09df60817bf39c98). `issue-51-repro.test.ts` updated for wrap semantics (4 cases): no emitted line exceeds; the wrapped lines round-trip to the original 134-char sentence verbatim (no data loss); narrow terminal (40 cols) survives; 200-char URL-ish tokens get chunked so wrapping has room to split.
+
+### Notes for upgraders
+- No CLI-flag or public-API changes. If you upgraded from v1.9.3 → v1.9.4 → v1.9.5, the user-visible difference between the last two is just wrap-vs-truncate in the dispatch tool's expanded report panel — both eliminate the crash. If you saw an ellipsis at the right edge of a sub-coder report on v1.9.4, you'll now see the full sentence wrapped onto the next line instead.
+
+---
+
+## [v1.9.4] — 2026-06-18
+
+### Fixed
+- **Dispatch tool-result panel overflows the terminal on wide report lines** ([#51](https://github.com/itayinbarr/little-coder/issues/51), reopen of [#48](https://github.com/itayinbarr/little-coder/issues/48)). v1.9.2 capped every line the *live* sub-coder tracker emitted, but the **dispatch tool's result renderer** (`subagent/index.ts`'s `makeComponent`) was still ignoring the `width` arg pi passes to `render(width)` — it returned the precomputed lines verbatim. pi paints the tool-result panel with a 1-char background-color left margin, so any sub-coder report sentence wider than `terminal_width - 1` overflowed pi-tui. Crash log line 453 was a 134-char markdown sentence rendered at terminal width 133 → 135 > 133. The same path runs on **`--resume`** (pi re-paints saved tool results from session history), so v1.9.2 users still hit it after upgrading whenever they resumed a session with a wide dispatch report saved — that's why @steverhoades caught the regression. `makeComponent` now truncates every emitted line to `width - 2` using the existing `_shared/width.ts` utility (2-char safety margin for wide unicode under our char-count-based `visibleWidth` approximation), so the dispatch panel can no longer crash a session — live, on resume, or anywhere else. New `subagent/issue-51-repro.test.ts` drives `makeComponent` with the user's exact 134-char content shape at width 133 and asserts no emitted line exceeds, plus a narrow-terminal (40-col) survival check.
+
+### Notes for upgraders
+- No CLI-flag or public-API changes. If you saw `Rendered line N exceeds terminal width` on v1.9.2 / 1.9.3 — especially while *resuming* a session — 1.9.4 fixes it. If you still see it after upgrading, the offending line in `~/.pi/agent/pi-crash.log` should let us spot the source; reopen #51 or #48 with the log attached.
+
+---
+
+## [v1.9.3] — 2026-06-18
+
+### Added
+- **`LITTLE_CODER_EXTRA_EXTENSIONS` env var: layer third-party pi extensions onto the bundled set without forking the installed package** ([#46](https://github.com/itayinbarr/little-coder/issues/46)). Path-delimited list (`:` on POSIX, `;` on Windows — `node:path.delimiter`) of extension paths. Each entry can be a direct file (e.g. a `pi-ponytail`-style `extensions/ponytail.js`) or a directory containing `index.ts` / `index.js` (the launcher prefers `.ts`). A leading `~/` is expanded; missing paths log a one-line warning to stderr and are skipped (a typo in the env var doesn't kill the session). Survives upgrades — drop the env var into your shell rc once and every `little-coder` run picks up the extras. Example: `LITTLE_CODER_EXTRA_EXTENSIONS=~/.local/lib/node_modules/pi-ponytail/extensions/ponytail.js little-coder`. Parsing rules live in `bin/extras.mjs` so they're unit-testable in isolation (9 cases covering direct-file / dir-index-resolution / `index.ts`-preference / missing-path warning / `~/` expansion / multiple entries / whitespace trimming). The launcher-level integration is exercised end-to-end (warning prints for a bad path; valid paths pass through silently to pi as `--extension <entry>` flags). Closest siblings — third-party skill bundles — are not yet covered; `skill-inject` still discovers only `<pkgRoot>/skills/tools/*.md`, and a follow-up will add the same kind of override.
+
+### Notes for upgraders
+- No CLI-flag or public-API changes. The new env var is opt-in: unset = identical behavior to v1.9.2. If you were carrying a custom wrapper extension inside the installed npm package (which gets wiped on upgrade), you can drop it and use the env var instead.
+
+---
+
 ## [v1.9.2] — 2026-06-18
 
 ### Fixed
