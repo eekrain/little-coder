@@ -123,17 +123,28 @@ function promptYesNo(question) {
 // Returns `true` if the launcher should NOT proceed to spawn pi (because we
 // updated and exited / the user opted out and we should re-run).  Returns
 // `false` to let the launcher continue.
+//
+// opts.force — bypass the 12h cache and always fetch the latest version from
+//   the registry. Used when the user explicitly passes `--update`. If already
+//   at the latest version, prints a short "up to date" notice instead of
+//   silently returning.
 export async function checkForUpdate(currentVersion, opts = {}) {
   const skip = opts.skip ?? shouldSkip();
   if (skip === true) return false;
 
-  let latest = readCache()?.latest;
+  const force = opts.force ?? false;
+  let latest = (!force && readCache()?.latest) || null;
   if (!latest) {
     latest = await fetchLatest();
     if (latest) writeCache(latest);
   }
   if (!latest) return false;
-  if (compareSemver(latest, currentVersion) <= 0) return false;
+  if (compareSemver(latest, currentVersion) <= 0) {
+    if (force) {
+      process.stderr.write(`\n   ✓ little-coder is already up to date (v${currentVersion}).\n\n`);
+    }
+    return false;
+  }
 
   const headline =
     `\n📦 little-coder v${latest} is available (you have v${currentVersion}).`;
@@ -151,17 +162,25 @@ export async function checkForUpdate(currentVersion, opts = {}) {
   }
 
   process.stderr.write(`\n   Running: npm install -g little-coder@${latest}\n\n`);
-  const result = spawnSync("npm", ["install", "-g", `little-coder@${latest}`], {
-    stdio: "inherit",
-  });
+  // On Windows `npm` resolves to `npm.cmd`, a batch-file shim that Node's
+  // spawnSync cannot execute without shell:true. However, shell:true with
+  // array args triggers DEP0190 on Node 24+. Instead, invoke cmd.exe directly
+  // via COMSPEC — it resolves `npm` to `npm.cmd` itself, no shell:true needed.
+  const npmArgs = ["install", "-g", `little-coder@${latest}`];
+  const result = process.platform === "win32"
+    ? spawnSync(process.env.COMSPEC || "cmd.exe", ["/c", "npm", ...npmArgs], { stdio: "inherit" })
+    : spawnSync("npm", npmArgs, { stdio: "inherit" });
   if (result.status === 0) {
     process.stderr.write(
       `\n   ✓ Updated to v${latest}. Re-run \`little-coder\` to use the new version.\n\n`,
     );
     return true;
   }
+  const exitDesc = result.error
+    ? `could not launch npm (${result.error.code ?? result.error.message})`
+    : `npm exit ${result.status}`;
   process.stderr.write(
-    `\n   ✗ Update failed (npm exit ${result.status}). Continuing with v${currentVersion}.\n\n`,
+    `\n   ✗ Update failed (${exitDesc}). Continuing with v${currentVersion}.\n\n`,
   );
   return false;
 }
