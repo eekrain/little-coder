@@ -2,6 +2,19 @@
 
 All notable changes to little-coder are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and little-coder's public interface (CLI, providers, tools, skills) follows semver starting at `v0.0.1` post-rename.
 
+## [v1.9.6] — 2026-06-18
+
+### Fixed
+- **Auto-update silently failed on Windows** ([PR #52](https://github.com/itayinbarr/little-coder/pull/52) by [@i-snyder](https://github.com/i-snyder)). On Windows `npm` is `npm.cmd` (a batch-file shim), and `spawnSync("npm", …)` without `shell: true` returns `ENOENT` before npm ever launches — the user saw `✗ Update failed (npm exit null). Continuing with v1.9.x.`, where the `null` exit code was the tell that npm never ran. The launcher now invokes `npm` via `process.env.COMSPEC /c npm` on Windows (`shell: true` would also work but triggers Node 24+'s `DEP0190` deprecation warning; COMSPEC doesn't). Cross-platform behavior unchanged: POSIX still uses plain `spawnSync("npm", …)`. The failure message is also fixed — when the spawn itself fails (`result.error` is set), the launcher now surfaces `result.error.code` (e.g. `ENOENT`) instead of `result.status` (which is `null` and meaningless), so users diagnosing future spawn failures get an actionable code instead of `npm exit null`.
+
+### Added
+- **`little-coder --update` forces a fresh update check** ([PR #52](https://github.com/itayinbarr/little-coder/pull/52) by [@i-snyder](https://github.com/i-snyder)). The launcher caches the registry "latest" lookup for 12 hours; `--update` bypasses that cache and fetches fresh from npm, then either updates or prints `✓ little-coder is already up to date (v<x>)`. The flag is stripped from argv before forwarding to pi, so `little-coder --update` no longer errors with `Unknown option: --update`. Two new `shouldSkip` tests document the interaction (the flag forces a check; the notice-only mode still applies on non-TTY).
+
+### Notes for upgraders
+- No CLI-flag or public-API breakage. Windows users on v1.9.5 or earlier should manually `npm install -g little-coder@1.9.6` this once; future updates will work via the in-app prompt or `little-coder --update`.
+
+---
+
 ## [v1.9.5] — 2026-06-18
 
 ### Changed
